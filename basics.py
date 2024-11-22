@@ -58,6 +58,7 @@ class RMSLayerNorm(nn.Module):
 class Position_Feedforward(nn.Module):
     def __init__(self, embed_dim:int, num_parameters:int):
         super(Position_Feedforward, self).__init__()
+        #simple feedfroward that uses GELU activation. RELU could die hence our preference for GELU
         self.lin1= nn.Linear(embed_dim, num_parameters)
         self.lin2 = nn.Linear(num_parameters, embed_dim)
     def forward(self,x:torch.Tensor):
