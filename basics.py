@@ -43,6 +43,9 @@ class Pseudo_GQA(nn.Module):
 
 class RMSLayerNorm(nn.Module):
     def __init__(self,expected_shape:list[int]|None,eps=1e-5):
+        """
+            Typical RMS Layer Norm
+        """
         super(RMSLayerNorm, self).__init__()
         self.layer_norm = nn.Linear(expected_shape,expected_shape) if expected_shape else None
         self.eps = eps  
