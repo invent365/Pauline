@@ -8,6 +8,8 @@ dim_head = 60 #dimension_head represents the number of attention heads the model
 embedding1 = nn.Embedding(base_model_encoding.n_vocab, dim_head) #embedding is no. of tokens in vocab * dim_head such that output = no. of sequences * no. of tokens in vocab * no. of tokens in vocab * dim_head
 # = no. of sequences in dim_head.
 
+#The idea with Pseudo_GQA is to share keys and values between all attention heads while maintaining a distinct representation for all queries. It may not be as effective as the classical model but it is deemed
+#resource efficient
 class Pseudo_GQA(nn.Module):
     def __init__(self, num_head, num_queries_per_group, embed_dim, dk, dv)->None:
         super(Pseudo_GQA, self).__init__()
@@ -25,6 +27,9 @@ class Pseudo_GQA(nn.Module):
     def forward(self, x:torch.Tensor)->list[torch.Tensor]:
         if self.num_head%self.num_queries_per_group != 0:
             raise AssertionError(f"Num_head({self.num_head}) is not divisible by num_queries_per_group({self.num_queries_per_group})")
+        """Rope is a positional embedding that calculates the relative distance between two tokens and is thought to be more sensitive to relative differences in tokens compared to absolute embedding.
+        we compute self_attention with queries, keys and values and pass through Wo to get our final activations. Because of the complexities involved in this model, it is primarily experimental.
+        """
         out_q = [rope.yield_template(self.queries[i](x)) for i in range(len(self.queries))]
         out_q= [torch.cat(out_q[i:i+self.num_queries_per_group],dim=-1) for i in range(0, len(out_q),self.num_queries_per_group)]
         out_k = [rope.yield_template(self.keys[i](x)) for i in range(len(self.keys))]
