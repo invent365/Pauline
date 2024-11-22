@@ -4,23 +4,24 @@ import torch, torch.nn as nn, torch.nn.functional as F
 import tiktoken,rope
 base_model_encoding = tiktoken.get_encoding(tiktoken.list_encoding_names()[0]) #using gpt2
 
-dim_head = 60
-embedding1 = nn.Embedding(base_model_encoding.n_vocab, dim_head)
+dim_head = 60 #dimension_head represents the number of attention heads the model has
+embedding1 = nn.Embedding(base_model_encoding.n_vocab, dim_head) #embedding is no. of tokens in vocab * dim_head such that output = no. of sequences * no. of tokens in vocab * no. of tokens in vocab * dim_head
+# = no. of sequences in dim_head.
 
 class Pseudo_GQA(nn.Module):
     def __init__(self, num_head, num_queries_per_group, embed_dim, dk, dv)->None:
         super(Pseudo_GQA, self).__init__()
-        self.num_head = num_head
-        self.embed_dim = embed_dim
-        self.dk=dk
-        self.dv = dv 
-        self.num_queries_per_group = num_queries_per_group
-        self.k_to_q_ratio = self.num_head/self.num_queries_per_group
+        self.num_head = num_head #no. of heads
+        self.embed_dim = embed_dim #embedding dimensions
+        self.dk=dk #dimension of keys
+        self.dv = dv #dimension of values
+        self.num_queries_per_group = num_queries_per_group #query dimension for each group
+        self.k_to_q_ratio = self.num_head/self.num_queries_per_group 
         #for every num_group, we match num_queries_per_group  queries to num_head/num_queries_per_group
-        self.queries = nn.ModuleList([nn.Linear(self.embed_dim, dk) for _ in range(num_head)])
-        self.keys = nn.ModuleList([nn.Linear(self.embed_dim, dk*num_queries_per_group) for _ in range(int(self.k_to_q_ratio))])
+        self.queries = nn.ModuleList([nn.Linear(self.embed_dim, dk) for _ in range(num_head)]) #queries Q for self attension 
+        self.keys = nn.ModuleList([nn.Linear(self.embed_dim, dk*num_queries_per_group) for _ in range(int(self.k_to_q_ratio))]) 
         self.values = nn.ModuleList([nn.Linear(self.dv, self.embed_dim) for _ in range(int(self.k_to_q_ratio))])
-        self.Wo = nn.Linear(self.dv*int(self.k_to_q_ratio),embed_dim)
+        self.Wo = nn.Linear(self.dv*int(self.k_to_q_ratio),embed_dim) #Massive seive to recieve the output of self attention
     def forward(self, x:torch.Tensor)->list[torch.Tensor]:
         if self.num_head%self.num_queries_per_group != 0:
             raise AssertionError(f"Num_head({self.num_head}) is not divisible by num_queries_per_group({self.num_queries_per_group})")
